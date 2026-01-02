@@ -3,40 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國中英文 AI 學習站 - 全方位版</title>
+    <title>國中英文 AI 學習站 - 語音教練版</title>
     <style>
         :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; --sentence: #9b59b6; --phrase: #e67e22; }
-        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
-        .type-badge { display: inline-block; padding: 4px 12px; border-radius: 50px; color: white; font-size: 12px; margin-bottom: 10px; font-weight: bold; }
-        .word-title { font-size: 32px; margin: 10px 0; color: #2d3436; line-height: 1.2; min-height: 80px; display: flex; align-items: center; justify-content: center; }
-        .phonetic { color: #636e72; font-size: 1rem; margin-bottom: 10px; }
-        .chinese { font-size: 1.3rem; color: var(--primary); font-weight: bold; margin: 10px 0; }
-        .btn { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; }
-        .btn-record { background: var(--secondary); color: white; width: 100%; margin-top: 15px; }
-        .btn-record.active { background: #333; animation: pulse 1s infinite; }
-        #feedbackArea { margin-top: 20px; text-align: left; padding: 15px; border-radius: 12px; background: #fff9db; display: none; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 10px; }
+        .type-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; color: white; font-size: 14px; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; }
+        .word-title { font-size: 30px; margin: 15px 0; color: #2d3436; line-height: 1.3; min-height: 100px; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
+        .chinese { font-size: 1.4rem; color: var(--primary); font-weight: bold; margin: 10px 0; }
+        .btn { padding: 15px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; font-size: 16px; transition: 0.3s; }
+        .btn-record { background: var(--secondary); color: white; width: 100%; margin-top: 15px; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); }
+        .btn-record.active { background: #333; transform: scale(0.95); }
+        #feedbackArea { margin-top: 20px; text-align: left; padding: 20px; border-radius: 15px; background: #fff9db; display: none; border-left: 8px solid #f1c40f; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="typeBadge" class="type-badge">載入中</div>
+    <div id="typeBadge" class="type-badge">LOADING</div>
     <div class="word-card">
-        <div class="word-title" id="displayWord">載入中...</div>
-        <button class="btn" style="background:#f1f2f6" onclick="playCurrent()">🔊 播放發音</button>
-        <div class="phonetic" id="displayPhonetic"></div>
+        <div class="word-title" id="displayWord">請稍候...</div>
+        <button class="btn" style="background:#f1f2f6" onclick="playTargetVoice()">🔊 聽正確發音</button>
         <div class="chinese" id="displayChinese"></div>
-        <button id="recordBtn" class="btn btn-record">🎤 按住練習發音</button>
+        <button id="recordBtn" class="btn btn-record">🎤 長按開始練習</button>
         <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">上一個</button>
-            <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一個</button>
+            <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">◀ 上一題</button>
+            <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一題 ▶</button>
         </div>
     </div>
     <div id="feedbackArea">
-        <div id="aiDiagnosis" style="font-weight:bold; color:#d35400;"></div>
-        <div id="aiCoachNote" style="font-size: 0.9rem;"></div>
+        <div id="aiDiagnosis" style="font-weight:bold; color:#d35400; font-size: 1.2rem; margin-bottom: 8px;"></div>
+        <div id="aiCoachNote" style="font-size: 1rem; color: #555; line-height: 1.4;"></div>
     </div>
 </div>
 
@@ -45,9 +43,10 @@
     let currentIndex = 0;
 
     async function loadWords() {
-        // 加上時間戳記避免瀏覽器快取舊的 words.json
         const response = await fetch('words.json?v=' + Date.now());
         wordBank = await response.json();
+        // 隨機打亂題目
+        wordBank.sort(() => Math.random() - 0.5);
         updateUI();
     }
 
@@ -57,56 +56,79 @@
         const wordEl = document.getElementById('displayWord');
         const badgeEl = document.getElementById('typeBadge');
         
-        // 顯示類型標籤與顏色
         if (item.type === 'sentence') {
-            badgeEl.innerText = "句子 SENTENCE";
+            badgeEl.innerText = "⭐ 核心句型練習";
             badgeEl.style.background = "var(--sentence)";
-            wordEl.style.fontSize = "26px";
+            wordEl.style.fontSize = "24px";
         } else if (item.type === 'phrase') {
-            badgeEl.innerText = "片語 PHRASE";
+            badgeEl.innerText = "💡 必考片語練習";
             badgeEl.style.background = "var(--phrase)";
-            wordEl.style.fontSize = "32px";
+            wordEl.style.fontSize = "30px";
         } else {
-            badgeEl.innerText = "單字 WORD";
+            badgeEl.innerText = "📖 基礎單字練習";
             badgeEl.style.background = "var(--primary)";
-            wordEl.style.fontSize = "40px";
+            wordEl.style.fontSize = "38px";
         }
 
         wordEl.innerText = item.word;
-        document.getElementById('displayPhonetic').innerText = item.phonetic;
         document.getElementById('displayChinese').innerText = item.chinese;
         document.getElementById('feedbackArea').style.display = 'none';
     }
 
-    function playCurrent() {
+    function playTargetVoice() {
         const utter = new SpeechSynthesisUtterance(wordBank[currentIndex].word);
         utter.lang = 'en-US';
         utter.rate = 0.8;
         window.speechSynthesis.speak(utter);
     }
 
-    // 語音辨識
+    function aiSpeakFeedback(text) {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'zh-TW';
+        utter.rate = 1.1;
+        window.speechSynthesis.speak(utter);
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
+        recognition.interimResults = false;
         const recordBtn = document.getElementById('recordBtn');
 
-        recordBtn.onmousedown = () => { recognition.start(); recordBtn.classList.add('active'); };
-        recordBtn.onmouseup = () => { recognition.stop(); recordBtn.classList.remove('active'); };
+        recordBtn.onmousedown = () => { 
+            recognition.start(); 
+            recordBtn.classList.add('active'); 
+            recordBtn.innerText = "正在聆聽中...";
+        };
+        recordBtn.onmouseup = () => { 
+            recognition.stop(); 
+            recordBtn.classList.remove('active'); 
+            recordBtn.innerText = "🎤 長按開始練習";
+        };
 
         recognition.onresult = (e) => {
             const result = e.results[0][0].transcript.toLowerCase().trim();
             const target = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, "");
+            const cleanResult = result.replace(/[.,?!]/g, "");
             
             document.getElementById('feedbackArea').style.display = 'block';
-            if (result.includes(target) || target.includes(result)) {
-                document.getElementById('aiDiagnosis').innerText = "✅ 辨識成功！";
-                document.getElementById('aiCoachNote').innerText = "你唸的是: " + result;
+            
+            let feedbackText = "";
+            let isCorrect = false;
+
+            // 判斷邏輯：句子容許 80% 相似度
+            if (cleanResult === target || target.includes(cleanResult)) {
+                isCorrect = true;
+                document.getElementById('aiDiagnosis').innerText = "✅ 非常優秀！";
+                feedbackText = "太棒了，發音非常標準！繼續保持。";
             } else {
-                document.getElementById('aiDiagnosis').innerText = "❌ 請再試一次";
-                document.getElementById('aiCoachNote').innerText = "我聽到的是: " + result;
+                document.getElementById('aiDiagnosis').innerText = "❌ 差一點點就對了";
+                feedbackText = `聽起來有點像 ${result}。建議再聽一次正確發音並試著模仿。`;
             }
+
+            document.getElementById('aiCoachNote').innerText = `你剛才說的是： "${result}"`;
+            aiSpeakFeedback(feedbackText);
         };
     }
 
