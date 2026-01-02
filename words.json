@@ -1,9 +1,17 @@
 [
-  { "type": "sentence", "word": "How have you been lately?", "phonetic": "句子", "chinese": "你最近好嗎？" },
-  { "type": "phrase", "word": "Look forward to", "phonetic": "片語", "chinese": "期待" },
-  { "type": "word", "word": "Environment", "phonetic": "/ɪnˈvaɪ.rən.mənt/", "chinese": "環境" },
-  { "type": "sentence", "word": "It is important to exercise every day.", "phonetic": "句子", "chinese": "每天運動是很重要的。" },
-  { "type": "phrase", "word": "Take care of", "phonetic": "片語", "chinese": "照顧" },
-  { "type": "sentence", "word": "What would you like to eat?", "phonetic": "句子", "chinese": "你想吃點什麼？" },
-  { "type": "word", "word": "Knowledge", "phonetic": "/ˈnɑː.lɪdʒ/", "chinese": "知識" }
+  { "type": "sentence", "word": "It is important to protect the environment.", "phonetic": "句子", "chinese": "保護環境是很重要的。" },
+  { "type": "sentence", "word": "The movie was so boring that I fell asleep.", "phonetic": "句子", "chinese": "這部電影太無聊了，以至於我睡著了。" },
+  { "type": "phrase", "word": "Take part in", "phonetic": "片語", "chinese": "參加" },
+  { "type": "sentence", "word": "I am looking forward to seeing you soon.", "phonetic": "句子", "chinese": "我期待很快見到你。" },
+  { "type": "phrase", "word": "Make up one's mind", "phonetic": "片語", "chinese": "下定決心" },
+  { "type": "sentence", "word": "He is too young to go to school by himself.", "phonetic": "句子", "chinese": "他太小了，不能自己去上學。" },
+  { "type": "word", "word": "Information", "phonetic": "/ˌɪn.fɚˈmeɪ.ʃən/", "chinese": "資訊" },
+  { "type": "sentence", "word": "The trash should be recycled every day.", "phonetic": "句子", "chinese": "垃圾應該每天回收。" },
+  { "type": "phrase", "word": "Run out of", "phonetic": "片語", "chinese": "用完；耗盡" },
+  { "type": "sentence", "word": "Could you tell me where the library is?", "phonetic": "句子", "chinese": "你能告訴我圖書館在哪裡嗎？" },
+  { "type": "sentence", "word": "Learning a foreign language takes time.", "phonetic": "句子", "chinese": "學習外語需要時間。" },
+  { "type": "phrase", "word": "Get along with", "phonetic": "片語", "chinese": "與...相處融洽" },
+  { "type": "sentence", "word": "I have already finished my homework.", "phonetic": "句子", "chinese": "我已經完成我的作業了。" },
+  { "type": "word", "word": "Experience", "phonetic": "/ɪkˈspɪr.i.əns/", "chinese": "經驗" },
+  { "type": "sentence", "word": "If it rains tomorrow, we will cancel the game.", "phonetic": "句子", "chinese": "如果明天下雨，我們就取消比賽。" }
 ]
