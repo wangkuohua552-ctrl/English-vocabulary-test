@@ -60,26 +60,24 @@
         { pattern: /s$|s /i, tip: "記得要把字尾的 s 嘶嘶聲發出來。" }
     ];
 
-    
-async function loadWords() {
-    try {
-        const response = await fetch('words.json');
-        let data = await response.json();
-        
-        // --- 隨機洗牌演算法 (Fisher-Yates Shuffle) ---
-        for (let i = data.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [data[i], data[j]] = [data[j], data[i]];
+    async function loadWords() {
+        try {
+            const response = await fetch('words.json');
+            let data = await response.json();
+            
+            // --- 隨機洗牌演算法 (Fisher-Yates Shuffle) ---
+            for (let i = data.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [data[i], data[j]] = [data[j], data[i]];
+            }
+            
+            wordBank = data;
+            updateUI();
+        } catch (e) {
+            console.error("載入失敗", e);
+            document.getElementById('displayWord').innerText = "請上傳 words.json";
         }
-        
-        wordBank = data;
-        console.log("單字已隨機排序");
-        updateUI();
-    } catch (e) {
-        console.error("載入失敗", e);
-        document.getElementById('displayWord').innerText = "請檢查 words.json";
     }
-}
 
     function updateUI() {
         if (wordBank.length === 0) return;
@@ -104,7 +102,6 @@ async function loadWords() {
         window.speechSynthesis.speak(utter);
     }
 
-    // 語音辨識邏輯
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -155,7 +152,5 @@ async function loadWords() {
 
     window.onload = loadWords;
 </script>
-
 </body>
-
 </html>
