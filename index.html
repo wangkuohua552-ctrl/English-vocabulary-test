@@ -80,13 +80,18 @@
         } catch (e) { console.error("載入失敗", e); }
     }
 
-    function updateUI() {
-        if (wordBank.length === 0) return;
-        const item = wordBank[currentIndex];
-        document.getElementById('displayWord').innerText = item.word;
-        document.getElementById('displayPhonetic').innerText = item.phonetic;
-        document.getElementById('displayChinese').innerText = item.chinese;
-    }
+function updateUI() {
+    if (wordBank.length === 0) return;
+    const item = wordBank[currentIndex];
+    
+    // 根據類型顯示不同的標籤顏色
+    const typeColor = item.type === 'sentence' ? '#9b59b6' : (item.type === 'phrase' ? '#e67e22' : '#4a90e2');
+    document.getElementById('displayWord').style.color = typeColor;
+    
+    document.getElementById('displayWord').innerText = item.word;
+    document.getElementById('displayPhonetic').innerText = item.phonetic;
+    document.getElementById('displayChinese').innerText = `[${item.type.toUpperCase()}] ${item.chinese}`;
+}
 
     // 挑戰模式邏輯
     function startChallenge() {
@@ -145,33 +150,48 @@
             recordBtn.classList.remove('active'); 
         };
 
-        recognition.onresult = (e) => {
-            const result = e.results[0][0].transcript.toLowerCase().trim();
-            const target = wordBank[currentIndex].word.toLowerCase();
-            
-            if (result === target) {
-                score += 10;
-                document.getElementById('score').innerText = score;
-                document.getElementById('aiDiagnosis').innerText = `✅ 答對了！(${result})`;
-                document.getElementById('feedbackArea').style.display = 'block';
-                
-                // 如果是挑戰模式，答對自動跳下一題
-                if (isChallengeActive) {
-                    setTimeout(() => { nextWord(); }, 500);
-                } else {
-                    speakChinese("非常標準！");
-                }
-            } else {
-                let tip = "請再試一次。";
-                for (let rule of phonemeRules) {
-                    if (rule.pattern.test(target)) { tip = rule.tip; break; }
-                }
-                document.getElementById('aiDiagnosis').innerText = `❌ 辨識結果: "${result}"`;
-                document.getElementById('aiCoachNote').innerText = tip;
-                document.getElementById('feedbackArea').style.display = 'block';
-                if (!isChallengeActive) speakChinese(`聽起來有點像 ${result}。提醒你，${tip}`);
-            }
-        };
+       recognition.onresult = (e) => {
+    const result = e.results[0][0].transcript.toLowerCase().trim();
+    const target = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, ""); // 去除標點符號比對
+    const type = wordBank[currentIndex].type;
+    
+    // 移除使用者說的話中的標點，方便比對
+    const cleanResult = result.replace(/[.,?!]/g, "");
+
+    let isCorrect = false;
+    
+    if (type === "sentence") {
+        // 句子模式：如果相似度超過 80% 或包含大部分單字即算對
+        const targetWords = target.split(" ");
+        const matchedWords = targetWords.filter(w => cleanResult.includes(w));
+        if (matchedWords.length / targetWords.length >= 0.8) isCorrect = true;
+    } else {
+        // 單字與片語模式：精確比對
+        if (cleanResult === target) isCorrect = true;
+    }
+
+    if (isCorrect) {
+        score += (type === "sentence" ? 30 : 15); // 句子比較難，給更多分
+        document.getElementById('score').innerText = score;
+        document.getElementById('aiDiagnosis').innerText = `✅ 太棒了！辨識結果: "${result}"`;
+        document.getElementById('feedbackArea').style.display = 'block';
+        
+        if (isChallengeActive) {
+            setTimeout(() => { nextWord(); }, 800);
+        } else {
+            speakChinese("發音非常流利，很有進步！");
+        }
+    } else {
+        // 針對句子與片語的糾錯提示
+        let tip = "試著唸得更連貫一點。";
+        if (type === "phrase") tip = "注意片語中的小單字（如 of, to）也要唸清楚喔。";
+        
+        document.getElementById('aiDiagnosis').innerText = `❌ 辨識結果: "${result}"`;
+        document.getElementById('aiCoachNote').innerText = tip;
+        document.getElementById('feedbackArea').style.display = 'block';
+        if (!isChallengeActive) speakChinese(`聽起來有點不完整。提醒你，${tip}`);
+    }
+};
     }
 
     function nextWord() { currentIndex = (currentIndex + 1) % wordBank.length; updateUI(); }
@@ -181,3 +201,4 @@
 </script>
 </body>
 </html>
+
