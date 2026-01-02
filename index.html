@@ -3,203 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國中英文 AI 學習站 - 60秒挑戰版</title>
+    <title>國中英文 AI 學習站 - 全方位版</title>
     <style>
-        :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; }
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 20px; position: relative; }
-        .timer-badge { position: absolute; top: 15px; right: 15px; background: var(--secondary); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; display: none; }
-        .word-card { margin: 20px 0; padding: 20px; border: 2px solid #edf2f7; border-radius: 20px; }
-        .word-title { font-size: 42px; margin: 0; color: #2d3436; letter-spacing: 1px; }
-        .phonetic { color: #636e72; font-size: 1.1rem; margin-bottom: 10px; }
-        .chinese { font-size: 1.4rem; color: var(--primary); font-weight: bold; margin: 10px 0; }
-        .btn { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; margin: 5px; font-size: 16px; }
-        .btn-record { background: var(--secondary); color: white; width: 100%; margin-top: 15px; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3); }
-        .btn-record.active { background: #2d3436; animation: pulse 1.2s infinite; }
-        .btn-challenge { background: #f39c12; color: white; width: 100%; margin-bottom: 10px; }
-        #feedbackArea { margin-top: 20px; text-align: left; padding: 15px; border-radius: 12px; background: #fff9db; display: none; border-left: 5px solid #f1c40f; }
-        .score-display { font-size: 1.1rem; color: var(--success); font-weight: bold; margin-bottom: 15px; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); opacity: 0.8; } 100% { transform: scale(1); } }
+        :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; --sentence: #9b59b6; --phrase: #e67e22; }
+        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        .type-badge { display: inline-block; padding: 4px 12px; border-radius: 50px; color: white; font-size: 12px; margin-bottom: 10px; font-weight: bold; }
+        .word-title { font-size: 32px; margin: 10px 0; color: #2d3436; line-height: 1.2; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .phonetic { color: #636e72; font-size: 1rem; margin-bottom: 10px; }
+        .chinese { font-size: 1.3rem; color: var(--primary); font-weight: bold; margin: 10px 0; }
+        .btn { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; }
+        .btn-record { background: var(--secondary); color: white; width: 100%; margin-top: 15px; }
+        .btn-record.active { background: #333; animation: pulse 1s infinite; }
+        #feedbackArea { margin-top: 20px; text-align: left; padding: 15px; border-radius: 12px; background: #fff9db; display: none; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="timer" class="timer-badge">60s</div>
-    <div class="score-display">🌟 學習積分：<span id="score">0</span></div>
-    
-    <button id="challengeBtn" class="btn btn-challenge" onclick="startChallenge()">🚀 開始 60 秒限時挑戰</button>
-
+    <div id="typeBadge" class="type-badge">載入中</div>
     <div class="word-card">
-        <div style="display:flex; justify-content:center; align-items:center; gap:12px;">
-            <h1 class="word-title" id="displayWord">載入中...</h1>
-            <button class="btn btn-play" onclick="playCurrentWord()">🔊</button>
-        </div>
+        <div class="word-title" id="displayWord">載入中...</div>
+        <button class="btn" style="background:#f1f2f6" onclick="playCurrent()">🔊 播放發音</button>
         <div class="phonetic" id="displayPhonetic"></div>
         <div class="chinese" id="displayChinese"></div>
-        
         <button id="recordBtn" class="btn btn-record">🎤 按住練習發音</button>
-        
-        <div id="navButtons" style="margin-top:20px; display:flex; gap:10px;">
+        <div style="margin-top:20px; display:flex; gap:10px;">
             <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">上一個</button>
             <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一個</button>
         </div>
     </div>
-
     <div id="feedbackArea">
-        <div id="aiDiagnosis" style="font-weight:bold; color:#d35400; margin-bottom:5px;">AI 診斷中...</div>
-        <div id="aiCoachNote" style="font-size: 0.95rem; color: #2c3e50;"></div>
+        <div id="aiDiagnosis" style="font-weight:bold; color:#d35400;"></div>
+        <div id="aiCoachNote" style="font-size: 0.9rem;"></div>
     </div>
 </div>
 
 <script>
     let wordBank = [];
     let currentIndex = 0;
-    let score = 0;
-    let isChallengeActive = false;
-    let timeLeft = 60;
-    let timerId = null;
-
-    const phonemeRules = [
-        { pattern: /th/i, tip: "注意 th 的音，要把舌尖輕輕放在上下排牙齒中間吹氣。" },
-        { pattern: /r/i, tip: "這個字有捲舌音 r，記得舌頭要往後縮，不要碰到上顎。" },
-        { pattern: /v/i, tip: "發 v 的音時，記得用上排牙齒輕輕咬住下唇。" },
-        { pattern: /s$|s /i, tip: "記得要把字尾的 s 嘶嘶聲發出來。" }
-    ];
 
     async function loadWords() {
-        try {
-            const response = await fetch('words.json');
-            let data = await response.json();
-            for (let i = data.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [data[i], data[j]] = [data[j], data[i]];
-            }
-            wordBank = data;
-            updateUI();
-        } catch (e) { console.error("載入失敗", e); }
+        // 加上時間戳記避免瀏覽器快取舊的 words.json
+        const response = await fetch('words.json?v=' + Date.now());
+        wordBank = await response.json();
+        updateUI();
     }
 
-function updateUI() {
-    if (wordBank.length === 0) return;
-    const item = wordBank[currentIndex];
-    const displayWord = document.getElementById('displayWord');
-    
-    // 根據類型調整字體大小，避免長句子超出框框
-    if (item.type === 'sentence') {
-        displayWord.style.fontSize = "28px";
-        displayWord.style.color = "#9b59b6"; // 紫色代表句子
-    } else if (item.type === 'phrase') {
-        displayWord.style.fontSize = "36px";
-        displayWord.style.color = "#e67e22"; // 橘色代表片語
-    } else {
-        displayWord.style.fontSize = "42px";
-        displayWord.style.color = "#4a90e2"; // 藍色代表單字
-    }
-    
-    displayWord.innerText = item.word;
-    document.getElementById('displayPhonetic').innerText = item.phonetic;
-    document.getElementById('displayChinese').innerText = `[${item.type === 'word' ? '單字' : (item.type === 'phrase' ? '片語' : '句子')}] ${item.chinese}`;
-}
-    // 挑戰模式邏輯
-    function startChallenge() {
-        isChallengeActive = true;
-        score = 0;
-        timeLeft = 60;
-        document.getElementById('score').innerText = score;
-        document.getElementById('challengeBtn').style.display = 'none';
-        document.getElementById('navButtons').style.display = 'none';
-        document.getElementById('timer').style.display = 'block';
+    function updateUI() {
+        if (wordBank.length === 0) return;
+        const item = wordBank[currentIndex];
+        const wordEl = document.getElementById('displayWord');
+        const badgeEl = document.getElementById('typeBadge');
         
-        speakChinese("挑戰開始！請在六十秒內唸對盡量多的單字。");
+        // 顯示類型標籤與顏色
+        if (item.type === 'sentence') {
+            badgeEl.innerText = "句子 SENTENCE";
+            badgeEl.style.background = "var(--sentence)";
+            wordEl.style.fontSize = "26px";
+        } else if (item.type === 'phrase') {
+            badgeEl.innerText = "片語 PHRASE";
+            badgeEl.style.background = "var(--phrase)";
+            wordEl.style.fontSize = "32px";
+        } else {
+            badgeEl.innerText = "單字 WORD";
+            badgeEl.style.background = "var(--primary)";
+            wordEl.style.fontSize = "40px";
+        }
 
-        timerId = setInterval(() => {
-            timeLeft--;
-            document.getElementById('timer').innerText = timeLeft + "s";
-            if (timeLeft <= 0) endChallenge();
-        }, 1000);
+        wordEl.innerText = item.word;
+        document.getElementById('displayPhonetic').innerText = item.phonetic;
+        document.getElementById('displayChinese').innerText = item.chinese;
+        document.getElementById('feedbackArea').style.display = 'none';
     }
 
-    function endChallenge() {
-        clearInterval(timerId);
-        isChallengeActive = false;
-        document.getElementById('challengeBtn').style.display = 'block';
-        document.getElementById('navButtons').style.display = 'flex';
-        document.getElementById('timer').style.display = 'none';
-        speakChinese(`時間到！挑戰結束。你總共獲得了 ${score} 分。做得好！`);
-        alert(`挑戰結束！您的得分是：${score}`);
-    }
-
-    function playCurrentWord() {
+    function playCurrent() {
         const utter = new SpeechSynthesisUtterance(wordBank[currentIndex].word);
         utter.lang = 'en-US';
-        utter.rate = 0.85;
+        utter.rate = 0.8;
         window.speechSynthesis.speak(utter);
     }
 
-    function speakChinese(text) {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'zh-TW';
-        window.speechSynthesis.speak(utter);
-    }
-
+    // 語音辨識
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
         const recordBtn = document.getElementById('recordBtn');
 
-        recordBtn.onmousedown = () => { 
-            recognition.start(); 
-            recordBtn.classList.add('active'); 
+        recordBtn.onmousedown = () => { recognition.start(); recordBtn.classList.add('active'); };
+        recordBtn.onmouseup = () => { recognition.stop(); recordBtn.classList.remove('active'); };
+
+        recognition.onresult = (e) => {
+            const result = e.results[0][0].transcript.toLowerCase().trim();
+            const target = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, "");
+            
+            document.getElementById('feedbackArea').style.display = 'block';
+            if (result.includes(target) || target.includes(result)) {
+                document.getElementById('aiDiagnosis').innerText = "✅ 辨識成功！";
+                document.getElementById('aiCoachNote').innerText = "你唸的是: " + result;
+            } else {
+                document.getElementById('aiDiagnosis').innerText = "❌ 請再試一次";
+                document.getElementById('aiCoachNote').innerText = "我聽到的是: " + result;
+            }
         };
-        recordBtn.onmouseup = () => { 
-            recognition.stop(); 
-            recordBtn.classList.remove('active'); 
-        };
-
-       recognition.onresult = (e) => {
-    const result = e.results[0][0].transcript.toLowerCase().trim();
-    const target = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, ""); // 去除標點符號比對
-    const type = wordBank[currentIndex].type;
-    
-    // 移除使用者說的話中的標點，方便比對
-    const cleanResult = result.replace(/[.,?!]/g, "");
-
-    let isCorrect = false;
-    
-    if (type === "sentence") {
-        // 句子模式：如果相似度超過 80% 或包含大部分單字即算對
-        const targetWords = target.split(" ");
-        const matchedWords = targetWords.filter(w => cleanResult.includes(w));
-        if (matchedWords.length / targetWords.length >= 0.8) isCorrect = true;
-    } else {
-        // 單字與片語模式：精確比對
-        if (cleanResult === target) isCorrect = true;
-    }
-
-    if (isCorrect) {
-        score += (type === "sentence" ? 30 : 15); // 句子比較難，給更多分
-        document.getElementById('score').innerText = score;
-        document.getElementById('aiDiagnosis').innerText = `✅ 太棒了！辨識結果: "${result}"`;
-        document.getElementById('feedbackArea').style.display = 'block';
-        
-        if (isChallengeActive) {
-            setTimeout(() => { nextWord(); }, 800);
-        } else {
-            speakChinese("發音非常流利，很有進步！");
-        }
-    } else {
-        // 針對句子與片語的糾錯提示
-        let tip = "試著唸得更連貫一點。";
-        if (type === "phrase") tip = "注意片語中的小單字（如 of, to）也要唸清楚喔。";
-        
-        document.getElementById('aiDiagnosis').innerText = `❌ 辨識結果: "${result}"`;
-        document.getElementById('aiCoachNote').innerText = tip;
-        document.getElementById('feedbackArea').style.display = 'block';
-        if (!isChallengeActive) speakChinese(`聽起來有點不完整。提醒你，${tip}`);
-    }
-};
     }
 
     function nextWord() { currentIndex = (currentIndex + 1) % wordBank.length; updateUI(); }
@@ -209,5 +117,3 @@ function updateUI() {
 </script>
 </body>
 </html>
-
-
