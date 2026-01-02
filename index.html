@@ -3,81 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國中英文 AI 發音教練</title>
+    <title>國中英文 AI 學習站 - 終極修復版</title>
     <style>
         :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; --sentence: #9b59b6; --phrase: #e67e22; }
-        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
         .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        .score-display { font-size: 1.1rem; color: var(--success); font-weight: bold; margin-bottom: 15px; }
         .type-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; color: white; font-size: 14px; margin-bottom: 15px; font-weight: bold; }
-        .word-title { font-size: 32px; margin: 15px 0; color: #2d3436; line-height: 1.3; min-height: 100px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .word-title { font-size: 28px; margin: 15px 0; color: #2d3436; line-height: 1.3; min-height: 80px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .chinese { font-size: 1.3rem; color: var(--primary); font-weight: bold; margin-bottom: 20px; }
-        .btn { padding: 15px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; font-size: 16px; }
+        .btn { padding: 15px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; font-size: 16px; transition: 0.3s; }
         .btn-record { background: var(--secondary); color: white; width: 100%; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); }
-        .btn-record.active { background: #333; animation: pulse 1s infinite; }
+        .btn-record.active { background: #333; transform: scale(0.95); }
         #feedbackArea { margin-top: 20px; text-align: left; padding: 20px; border-radius: 15px; background: #fff9db; display: none; border-left: 10px solid #f1c40f; }
-        .diag-success { color: #27ae60; font-weight: bold; }
-        .diag-error { color: #c0392b; font-weight: bold; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .hint { font-size: 0.85rem; color: #95a5a6; margin-top: 10px; }
     </style>
 </head>
-<body>
+<body onclick="unlockAudio()">
 
 <div class="container">
-    <div id="typeBadge" class="type-badge">載入中...</div>
+    <div class="score-display">🌟 積分：<span id="score">0</span></div>
+    <div id="typeBadge" class="type-badge">準備中</div>
+    
     <div class="word-card">
-        <div class="word-title" id="displayWord">...</div>
+        <div class="word-title" id="displayWord">點擊任意處啟動</div>
         <button class="btn" style="background:#f1f2f6" onclick="playTargetVoice()">🔊 聽正確發音</button>
         <div class="chinese" id="displayChinese"></div>
+        
         <button id="recordBtn" class="btn btn-record">🎤 按住練習（放開結束）</button>
+        
         <div style="margin-top:20px; display:flex; gap:10px;">
             <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">◀ 上一題</button>
             <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一題 ▶</button>
         </div>
     </div>
+
     <div id="feedbackArea">
-        <div id="aiStatus" style="margin-bottom: 10px;"></div>
+        <div id="aiStatus" style="font-weight:bold; margin-bottom:5px;"></div>
         <div id="aiAdvice" style="font-size: 1rem; color: #2c3e50; line-height: 1.5;"></div>
     </div>
+    
+    <div class="hint">若無聲音，請先點擊網頁任意處再試</div>
 </div>
 
 <script>
     let wordBank = [];
     let currentIndex = 0;
+    let score = 0;
+    let audioUnlocked = false;
 
-    // 定義發音規則庫
+    // 發音糾錯規則
     const pronunciationRules = [
-        { id: 'th', pattern: /th/i, advice: "請注意 th 的音，要把舌尖輕輕放在上下排牙齒中間吹氣喔。" },
-        { id: 'r', pattern: /r/i, advice: "這個字有捲舌音 r，記得舌頭要往後縮，不要碰到上顎。" },
-        { id: 'v', pattern: /v/i, advice: "發 v 的音時，記得用上排牙齒輕輕咬住下唇發音。" },
-        { id: 'l', pattern: /l/i, advice: "注意 l 的音，舌尖要抵住上排牙齒的後方。" },
-        { id: 's', pattern: /s$|s /i, advice: "字尾的 s 聲音要發出來，像嘶嘶聲一樣。" }
+        { pattern: /th/i, advice: "注意 th 的咬舌音，舌尖要放在牙齒中間吹氣。" },
+        { pattern: /r/i, advice: "有捲舌音 r，舌頭往後縮，不要碰到上顎。" },
+        { pattern: /v/i, advice: "發 v 的音，用上排牙齒輕咬下唇。" },
+        { pattern: /l/i, advice: "注意 l 的音，舌尖抵住上排牙齒後方。" },
+        { pattern: /s$|s /i, advice: "字尾的 s 記得要發出嘶嘶聲。" }
     ];
 
+    // 解鎖語音引擎 (針對行動裝置)
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        const utter = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(utter);
+        audioUnlocked = true;
+        console.log("語音已解鎖");
+    }
+
     async function loadWords() {
-        const response = await fetch('words.json?v=' + Date.now());
-        wordBank = await response.json();
-        wordBank.sort(() => Math.random() - 0.5);
-        updateUI();
+        try {
+            const response = await fetch('words.json?v=' + Date.now());
+            wordBank = await response.json();
+            wordBank.sort(() => Math.random() - 0.5);
+            updateUI();
+        } catch (e) {
+            document.getElementById('displayWord').innerText = "載入失敗，請檢查 words.json";
+        }
     }
 
     function updateUI() {
         if (wordBank.length === 0) return;
         const item = wordBank[currentIndex];
-        document.getElementById('displayWord').innerText = item.word;
+        const wordEl = document.getElementById('displayWord');
+        const badge = document.getElementById('typeBadge');
+        
+        wordEl.innerText = item.word;
         document.getElementById('displayChinese').innerText = item.chinese;
         
-        const badge = document.getElementById('typeBadge');
         if (item.type === 'sentence') { 
             badge.innerText = "⭐ 核心句型"; badge.style.background = "#9b59b6";
-            document.getElementById('displayWord').style.fontSize = "26px";
+            wordEl.style.fontSize = "24px";
         } else {
-            badge.innerText = "📖 單字練習"; badge.style.background = "#4a90e2";
-            document.getElementById('displayWord').style.fontSize = "32px";
+            badge.innerText = "📖 單字/片語"; badge.style.background = "#4a90e2";
+            wordEl.style.fontSize = "32px";
         }
         document.getElementById('feedbackArea').style.display = 'none';
     }
 
     function playTargetVoice() {
+        unlockAudio();
         const utter = new SpeechSynthesisUtterance(wordBank[currentIndex].word);
         utter.lang = 'en-US';
         utter.rate = 0.8;
@@ -85,7 +109,7 @@
     }
 
     function aiSpeak(text) {
-        window.speechSynthesis.cancel(); // 先停止之前的說話
+        window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'zh-TW';
         utter.rate = 1.1;
@@ -96,9 +120,6 @@
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
         const recordBtn = document.getElementById('recordBtn');
 
         recordBtn.onmousedown = () => { recognition.start(); recordBtn.classList.add('active'); };
@@ -109,37 +130,25 @@
             const targetWord = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, "");
             
             document.getElementById('feedbackArea').style.display = 'block';
-            let statusHtml = "";
-            let adviceText = "";
-
-            // 1. 判斷是否完全匹配
-            if (userSpeech === targetWord) {
-                statusHtml = "<span class='diag-success'>✅ 發音完美！</span>";
-                adviceText = "太棒了！你的發音非常標準，聽起來跟母語人士一樣。";
-            } 
-            // 2. 判斷是否部分匹配（用於句子）
-            else if (targetWord.includes(userSpeech) || userSpeech.includes(targetWord)) {
-                statusHtml = "<span class='diag-success'>✅ 辨識成功</span>";
-                adviceText = "我聽懂了！雖然有一點點口音，但溝通沒問題。";
-            }
-            // 3. 發音錯誤：進入智慧診斷
-            else {
-                statusHtml = "<span class='diag-error'>❌ 發音不夠清晰</span>";
-                let ruleAdvice = "請試著再聽一次標準發音，並注意重音位置。";
-                
-                // 檢查是否符合特定錯誤規則
+            let advice = "";
+            
+            // 糾錯邏輯：比對文字與預設規則
+            if (userSpeech === targetWord || targetWord.includes(userSpeech)) {
+                advice = "太棒了！發音非常標準。";
+                document.getElementById('aiStatus').innerHTML = "<span style='color:green'>✅ 辨識成功</span>";
+                score += 10;
+            } else {
+                let ruleTip = "請注意重音並試著模仿正確發音。";
                 for (let rule of pronunciationRules) {
-                    if (rule.pattern.test(targetWord)) {
-                        ruleAdvice = rule.advice;
-                        break;
-                    }
+                    if (rule.pattern.test(targetWord)) { ruleTip = rule.advice; break; }
                 }
-                adviceText = `我聽到的是 "${userSpeech}"。提醒你：${ruleAdvice}`;
+                advice = `我聽到的是 "${userSpeech}"。提醒你：${ruleTip}`;
+                document.getElementById('aiStatus').innerHTML = "<span style='color:red'>❌ 需要改進</span>";
             }
 
-            document.getElementById('aiStatus').innerHTML = statusHtml;
-            document.getElementById('aiAdvice').innerText = adviceText;
-            aiSpeak(adviceText);
+            document.getElementById('score').innerText = score;
+            document.getElementById('aiAdvice').innerText = advice;
+            aiSpeak(advice);
         };
     }
 
