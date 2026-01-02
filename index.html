@@ -83,16 +83,24 @@
 function updateUI() {
     if (wordBank.length === 0) return;
     const item = wordBank[currentIndex];
+    const displayWord = document.getElementById('displayWord');
     
-    // 根據類型顯示不同的標籤顏色
-    const typeColor = item.type === 'sentence' ? '#9b59b6' : (item.type === 'phrase' ? '#e67e22' : '#4a90e2');
-    document.getElementById('displayWord').style.color = typeColor;
+    // 根據類型調整字體大小，避免長句子超出框框
+    if (item.type === 'sentence') {
+        displayWord.style.fontSize = "28px";
+        displayWord.style.color = "#9b59b6"; // 紫色代表句子
+    } else if (item.type === 'phrase') {
+        displayWord.style.fontSize = "36px";
+        displayWord.style.color = "#e67e22"; // 橘色代表片語
+    } else {
+        displayWord.style.fontSize = "42px";
+        displayWord.style.color = "#4a90e2"; // 藍色代表單字
+    }
     
-    document.getElementById('displayWord').innerText = item.word;
+    displayWord.innerText = item.word;
     document.getElementById('displayPhonetic').innerText = item.phonetic;
-    document.getElementById('displayChinese').innerText = `[${item.type.toUpperCase()}] ${item.chinese}`;
+    document.getElementById('displayChinese').innerText = `[${item.type === 'word' ? '單字' : (item.type === 'phrase' ? '片語' : '句子')}] ${item.chinese}`;
 }
-
     // 挑戰模式邏輯
     function startChallenge() {
         isChallengeActive = true;
@@ -201,4 +209,5 @@ function updateUI() {
 </script>
 </body>
 </html>
+
 
