@@ -3,36 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國中英文 AI 學習站 - 終極修復版</title>
+    <title>國中英文 AI 聽說挑戰站</title>
     <style>
         :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; --sentence: #9b59b6; --phrase: #e67e22; }
         body { font-family: 'PingFang TC', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
-        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; position: relative; }
+        .timer-badge { position: absolute; top: 15px; right: 15px; background: var(--secondary); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; display: none; }
         .score-display { font-size: 1.1rem; color: var(--success); font-weight: bold; margin-bottom: 15px; }
         .type-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; color: white; font-size: 14px; margin-bottom: 15px; font-weight: bold; }
         .word-title { font-size: 28px; margin: 15px 0; color: #2d3436; line-height: 1.3; min-height: 80px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .chinese { font-size: 1.3rem; color: var(--primary); font-weight: bold; margin-bottom: 20px; }
         .btn { padding: 15px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; font-size: 16px; transition: 0.3s; }
+        .btn-challenge { background: #f39c12; color: white; width: 100%; margin-bottom: 10px; }
         .btn-record { background: var(--secondary); color: white; width: 100%; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); }
-        .btn-record.active { background: #333; transform: scale(0.95); }
+        .btn-record.active { background: #333; transform: scale(0.95); animation: pulse 1s infinite; }
         #feedbackArea { margin-top: 20px; text-align: left; padding: 20px; border-radius: 15px; background: #fff9db; display: none; border-left: 10px solid #f1c40f; }
-        .hint { font-size: 0.85rem; color: #95a5a6; margin-top: 10px; }
+        #pronunciationTip { margin-top: 10px; display: none; border-radius: 10px; overflow: hidden; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
 </head>
 <body onclick="unlockAudio()">
 
 <div class="container">
+    <div id="timer" class="timer-badge">20s</div>
     <div class="score-display">🌟 積分：<span id="score">0</span></div>
-    <div id="typeBadge" class="type-badge">準備中</div>
     
+    <button id="challengeBtn" class="btn btn-challenge" onclick="startChallenge()">🚀 開始 20 秒限時挑戰</button>
+
     <div class="word-card">
+        <div id="typeBadge" class="type-badge">準備中</div>
         <div class="word-title" id="displayWord">點擊任意處啟動</div>
         <button class="btn" style="background:#f1f2f6" onclick="playTargetVoice()">🔊 聽正確發音</button>
         <div class="chinese" id="displayChinese"></div>
         
-        <button id="recordBtn" class="btn btn-record">🎤 按住練習（放開結束）</button>
+        <button id="recordBtn" class="btn btn-record">🎤 長按錄音 (隨時可重錄)</button>
         
-        <div style="margin-top:20px; display:flex; gap:10px;">
+        <div id="navButtons" style="margin-top:20px; display:flex; gap:10px;">
             <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">◀ 上一題</button>
             <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一題 ▶</button>
         </div>
@@ -41,33 +47,26 @@
     <div id="feedbackArea">
         <div id="aiStatus" style="font-weight:bold; margin-bottom:5px;"></div>
         <div id="aiAdvice" style="font-size: 1rem; color: #2c3e50; line-height: 1.5;"></div>
+        <div id="pronunciationTip">
+            <p style="font-size: 0.8rem; color: #e67e22;">💡 技巧提示：舌尖需放在牙齒中間吹氣</p>
+        </div>
     </div>
-    
-    <div class="hint">若無聲音，請先點擊網頁任意處再試</div>
 </div>
 
 <script>
     let wordBank = [];
     let currentIndex = 0;
     let score = 0;
+    let isChallengeActive = false;
+    let timeLeft = 20;
+    let timerId = null;
     let audioUnlocked = false;
 
-    // 發音糾錯規則
-    const pronunciationRules = [
-        { pattern: /th/i, advice: "注意 th 的咬舌音，舌尖要放在牙齒中間吹氣。" },
-        { pattern: /r/i, advice: "有捲舌音 r，舌頭往後縮，不要碰到上顎。" },
-        { pattern: /v/i, advice: "發 v 的音，用上排牙齒輕咬下唇。" },
-        { pattern: /l/i, advice: "注意 l 的音，舌尖抵住上排牙齒後方。" },
-        { pattern: /s$|s /i, advice: "字尾的 s 記得要發出嘶嘶聲。" }
-    ];
-
-    // 解鎖語音引擎 (針對行動裝置)
+    // 解鎖語音
     function unlockAudio() {
         if (audioUnlocked) return;
-        const utter = new SpeechSynthesisUtterance("");
-        window.speechSynthesis.speak(utter);
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
         audioUnlocked = true;
-        console.log("語音已解鎖");
     }
 
     async function loadWords() {
@@ -76,9 +75,7 @@
             wordBank = await response.json();
             wordBank.sort(() => Math.random() - 0.5);
             updateUI();
-        } catch (e) {
-            document.getElementById('displayWord').innerText = "載入失敗，請檢查 words.json";
-        }
+        } catch (e) { document.getElementById('displayWord').innerText = "載入失敗"; }
     }
 
     function updateUI() {
@@ -89,30 +86,53 @@
         
         wordEl.innerText = item.word;
         document.getElementById('displayChinese').innerText = item.chinese;
-        
-        if (item.type === 'sentence') { 
-            badge.innerText = "⭐ 核心句型"; badge.style.background = "#9b59b6";
-            wordEl.style.fontSize = "24px";
-        } else {
-            badge.innerText = "📖 單字/片語"; badge.style.background = "#4a90e2";
-            wordEl.style.fontSize = "32px";
-        }
+        badge.innerText = item.type.toUpperCase();
+        badge.style.background = item.type === 'sentence' ? "#9b59b6" : "#4a90e2";
+        wordEl.style.fontSize = item.type === 'sentence' ? "24px" : "32px";
         document.getElementById('feedbackArea').style.display = 'none';
+        document.getElementById('pronunciationTip').style.display = 'none';
     }
 
-    function playTargetVoice() {
-        unlockAudio();
-        const utter = new SpeechSynthesisUtterance(wordBank[currentIndex].word);
-        utter.lang = 'en-US';
-        utter.rate = 0.8;
-        window.speechSynthesis.speak(utter);
+    function startChallenge() {
+        isChallengeActive = true;
+        score = 0;
+        timeLeft = 20;
+        document.getElementById('score').innerText = score;
+        document.getElementById('challengeBtn').style.display = 'none';
+        document.getElementById('navButtons').style.display = 'none';
+        document.getElementById('timer').style.display = 'block';
+        
+        aiSpeak("挑戰開始，二十秒倒數！");
+
+        timerId = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if (timeLeft <= 0) endChallenge();
+        }, 1000);
+    }
+
+    function endChallenge() {
+        clearInterval(timerId);
+        isChallengeActive = false;
+        document.getElementById('challengeBtn').style.display = 'block';
+        document.getElementById('navButtons').style.display = 'flex';
+        document.getElementById('timer').style.display = 'none';
+        aiSpeak(`挑戰結束，你得到了 ${score} 分。`);
     }
 
     function aiSpeak(text) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // 核心：播新聲音前先切斷舊聲音
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'zh-TW';
         utter.rate = 1.1;
+        window.speechSynthesis.speak(utter);
+    }
+
+    function playTargetVoice() {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(wordBank[currentIndex].word);
+        utter.lang = 'en-US';
+        utter.rate = 0.8;
         window.speechSynthesis.speak(utter);
     }
 
@@ -122,28 +142,36 @@
         recognition.lang = 'en-US';
         const recordBtn = document.getElementById('recordBtn');
 
-        recordBtn.onmousedown = () => { recognition.start(); recordBtn.classList.add('active'); };
-        recordBtn.onmouseup = () => { recognition.stop(); recordBtn.classList.remove('active'); };
+        recordBtn.onmousedown = () => {
+            window.speechSynthesis.cancel(); // 核心：按下的瞬間立刻靜音 AI
+            recognition.start();
+            recordBtn.classList.add('active');
+        };
+
+        recordBtn.onmouseup = () => {
+            recognition.stop();
+            recordBtn.classList.remove('active');
+        };
 
         recognition.onresult = (e) => {
             const userSpeech = e.results[0][0].transcript.toLowerCase().trim();
-            const targetWord = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, "");
+            const target = wordBank[currentIndex].word.toLowerCase().replace(/[.,?!]/g, "");
             
             document.getElementById('feedbackArea').style.display = 'block';
             let advice = "";
-            
-            // 糾錯邏輯：比對文字與預設規則
-            if (userSpeech === targetWord || targetWord.includes(userSpeech)) {
-                advice = "太棒了！發音非常標準。";
-                document.getElementById('aiStatus').innerHTML = "<span style='color:green'>✅ 辨識成功</span>";
+
+            if (userSpeech === target || target.includes(userSpeech)) {
                 score += 10;
+                document.getElementById('aiStatus').innerHTML = "<span style='color:green'>✅ 完美發音</span>";
+                advice = "太棒了，完全正確！";
+                if (isChallengeActive) setTimeout(nextWord, 600);
+            } else if (target.includes("th") && (userSpeech.includes("s") || userSpeech.includes("f") || userSpeech.includes("z"))) {
+                document.getElementById('aiStatus').innerHTML = "<span style='color:orange'>⚠️ 注意 th 音</span>";
+                advice = "接近了，但 th 音要把舌尖夾在牙齒中間吹氣。";
+                document.getElementById('pronunciationTip').style.display = 'block';
             } else {
-                let ruleTip = "請注意重音並試著模仿正確發音。";
-                for (let rule of pronunciationRules) {
-                    if (rule.pattern.test(targetWord)) { ruleTip = rule.advice; break; }
-                }
-                advice = `我聽到的是 "${userSpeech}"。提醒你：${ruleTip}`;
-                document.getElementById('aiStatus').innerHTML = "<span style='color:red'>❌ 需要改進</span>";
+                document.getElementById('aiStatus').innerHTML = "<span style='color:red'>❌ 辨識為: " + userSpeech + "</span>";
+                advice = "請再試一次，或是按喇叭聽正確發音。";
             }
 
             document.getElementById('score').innerText = score;
