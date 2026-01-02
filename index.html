@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國中英文 AI 學習站 - 專業版</title>
+    <title>國中英文 AI 學習站 - 60秒挑戰版</title>
     <style>
         :root { --primary: #4a90e2; --secondary: #ff4757; --success: #2ecc71; --bg: #f8f9fa; }
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 20px; }
+        .container { background: white; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 20px; position: relative; }
+        .timer-badge { position: absolute; top: 15px; right: 15px; background: var(--secondary); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; display: none; }
         .word-card { margin: 20px 0; padding: 20px; border: 2px solid #edf2f7; border-radius: 20px; }
         .word-title { font-size: 42px; margin: 0; color: #2d3436; letter-spacing: 1px; }
         .phonetic { color: #636e72; font-size: 1.1rem; margin-bottom: 10px; }
         .chinese { font-size: 1.4rem; color: var(--primary); font-weight: bold; margin: 10px 0; }
         .btn { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; margin: 5px; font-size: 16px; }
-        .btn-play { background: #f1f2f6; font-size: 20px; }
         .btn-record { background: var(--secondary); color: white; width: 100%; margin-top: 15px; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3); }
         .btn-record.active { background: #2d3436; animation: pulse 1.2s infinite; }
+        .btn-challenge { background: #f39c12; color: white; width: 100%; margin-bottom: 10px; }
         #feedbackArea { margin-top: 20px; text-align: left; padding: 15px; border-radius: 12px; background: #fff9db; display: none; border-left: 5px solid #f1c40f; }
         .score-display { font-size: 1.1rem; color: var(--success); font-weight: bold; margin-bottom: 15px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); opacity: 0.8; } 100% { transform: scale(1); } }
@@ -24,8 +25,11 @@
 <body>
 
 <div class="container">
+    <div id="timer" class="timer-badge">60s</div>
     <div class="score-display">🌟 學習積分：<span id="score">0</span></div>
     
+    <button id="challengeBtn" class="btn btn-challenge" onclick="startChallenge()">🚀 開始 60 秒限時挑戰</button>
+
     <div class="word-card">
         <div style="display:flex; justify-content:center; align-items:center; gap:12px;">
             <h1 class="word-title" id="displayWord">載入中...</h1>
@@ -36,7 +40,7 @@
         
         <button id="recordBtn" class="btn btn-record">🎤 按住練習發音</button>
         
-        <div style="margin-top:20px; display:flex; gap:10px;">
+        <div id="navButtons" style="margin-top:20px; display:flex; gap:10px;">
             <button class="btn" onclick="prevWord()" style="flex:1; background:#eee;">上一個</button>
             <button class="btn" onclick="nextWord()" style="flex:1; background:#eee;">下一個</button>
         </div>
@@ -52,6 +56,9 @@
     let wordBank = [];
     let currentIndex = 0;
     let score = 0;
+    let isChallengeActive = false;
+    let timeLeft = 60;
+    let timerId = null;
 
     const phonemeRules = [
         { pattern: /th/i, tip: "注意 th 的音，要把舌尖輕輕放在上下排牙齒中間吹氣。" },
@@ -64,19 +71,13 @@
         try {
             const response = await fetch('words.json');
             let data = await response.json();
-            
-            // --- 隨機洗牌演算法 (Fisher-Yates Shuffle) ---
             for (let i = data.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [data[i], data[j]] = [data[j], data[i]];
             }
-            
             wordBank = data;
             updateUI();
-        } catch (e) {
-            console.error("載入失敗", e);
-            document.getElementById('displayWord').innerText = "請上傳 words.json";
-        }
+        } catch (e) { console.error("載入失敗", e); }
     }
 
     function updateUI() {
@@ -85,7 +86,35 @@
         document.getElementById('displayWord').innerText = item.word;
         document.getElementById('displayPhonetic').innerText = item.phonetic;
         document.getElementById('displayChinese').innerText = item.chinese;
-        document.getElementById('feedbackArea').style.display = 'none';
+    }
+
+    // 挑戰模式邏輯
+    function startChallenge() {
+        isChallengeActive = true;
+        score = 0;
+        timeLeft = 60;
+        document.getElementById('score').innerText = score;
+        document.getElementById('challengeBtn').style.display = 'none';
+        document.getElementById('navButtons').style.display = 'none';
+        document.getElementById('timer').style.display = 'block';
+        
+        speakChinese("挑戰開始！請在六十秒內唸對盡量多的單字。");
+
+        timerId = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if (timeLeft <= 0) endChallenge();
+        }, 1000);
+    }
+
+    function endChallenge() {
+        clearInterval(timerId);
+        isChallengeActive = false;
+        document.getElementById('challengeBtn').style.display = 'block';
+        document.getElementById('navButtons').style.display = 'flex';
+        document.getElementById('timer').style.display = 'none';
+        speakChinese(`時間到！挑戰結束。你總共獲得了 ${score} 分。做得好！`);
+        alert(`挑戰結束！您的得分是：${score}`);
     }
 
     function playCurrentWord() {
@@ -98,7 +127,6 @@
     function speakChinese(text) {
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'zh-TW';
-        utter.rate = 1.0;
         window.speechSynthesis.speak(utter);
     }
 
@@ -111,39 +139,38 @@
         recordBtn.onmousedown = () => { 
             recognition.start(); 
             recordBtn.classList.add('active'); 
-            recordBtn.innerText = "正在聆聽...";
         };
         recordBtn.onmouseup = () => { 
             recognition.stop(); 
             recordBtn.classList.remove('active'); 
-            recordBtn.innerText = "🎤 按住練習發音";
         };
 
         recognition.onresult = (e) => {
             const result = e.results[0][0].transcript.toLowerCase().trim();
             const target = wordBank[currentIndex].word.toLowerCase();
             
-            let coachVoice = "";
-            let diagnosis = "";
-
             if (result === target) {
-                diagnosis = `✅ 完美發音！(${result})`;
-                coachVoice = `太棒了！你的 ${target} 發音非常標準。`;
                 score += 10;
+                document.getElementById('score').innerText = score;
+                document.getElementById('aiDiagnosis').innerText = `✅ 答對了！(${result})`;
+                document.getElementById('feedbackArea').style.display = 'block';
+                
+                // 如果是挑戰模式，答對自動跳下一題
+                if (isChallengeActive) {
+                    setTimeout(() => { nextWord(); }, 500);
+                } else {
+                    speakChinese("非常標準！");
+                }
             } else {
-                diagnosis = `❌ 辨識結果: "${result}"`;
-                let tip = "請注意重音位置並再試一次。";
+                let tip = "請再試一次。";
                 for (let rule of phonemeRules) {
                     if (rule.pattern.test(target)) { tip = rule.tip; break; }
                 }
-                coachVoice = `聽起來有點像 ${result}。提醒你，${tip}`;
+                document.getElementById('aiDiagnosis').innerText = `❌ 辨識結果: "${result}"`;
+                document.getElementById('aiCoachNote').innerText = tip;
+                document.getElementById('feedbackArea').style.display = 'block';
+                if (!isChallengeActive) speakChinese(`聽起來有點像 ${result}。提醒你，${tip}`);
             }
-
-            document.getElementById('score').innerText = score;
-            document.getElementById('aiDiagnosis').innerText = diagnosis;
-            document.getElementById('aiCoachNote').innerText = coachVoice;
-            document.getElementById('feedbackArea').style.display = 'block';
-            speakChinese(coachVoice);
         };
     }
 
