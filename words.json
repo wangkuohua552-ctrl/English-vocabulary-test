@@ -1,0 +1,12 @@
+[
+  { "word": "Environment", "phonetic": "/ɪnˈvaɪ.rən.mənt/", "chinese": "環境" },
+  { "word": "Knowledge", "phonetic": "/ˈnɑː.lɪdʒ/", "chinese": "知識" },
+  { "word": "Vocabulary", "phonetic": "/vəˈkæb.jə.ler.i/", "chinese": "單字庫" },
+  { "word": "Challenge", "phonetic": "/ˈtʃæl.ɪndʒ/", "chinese": "挑戰" },
+  { "word": "Experience", "phonetic": "/ɪkˈspɪr.i.əns/", "chinese": "經驗" },
+  { "word": "Information", "phonetic": "/ˌɪn.fɚˈmeɪ.ʃən/", "chinese": "資訊" },
+  { "word": "Thousand", "phonetic": "/ˈθaʊ.zənd/", "chinese": "一千" },
+  { "word": "Necessary", "phonetic": "/ˈnes.ə.ser.i/", "chinese": "必要的" },
+  { "word": "Restaurant", "phonetic": "/ˈres.tə.rɑːnt/", "chinese": "餐廳" },
+  { "word": "Temperature", "phonetic": "/ˈtem.pɚ.ə.tʃɚ/", "chinese": "溫度" }
+]
